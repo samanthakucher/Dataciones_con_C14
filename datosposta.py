@@ -6,7 +6,7 @@ Created on Wed Jan 24 21:53:45 2018
 """
 
 import numpy as np
-from scipy.stats import poisson, uniform
+from scipy.stats import poisson, uniform, beta, gamma
 import matplotlib.pyplot as plt
 import time
 
@@ -47,6 +47,10 @@ c14std_p, c14m_p, c14f_p = np.mean(c14std), np.mean(c14m), np.mean(c14f)
 c12istd_p, c12fstd_p = np.mean(c12istd), np.mean(c12fstd)
 c12im_p, c12fm_p = np.mean(c12im), np.mean(c12fm)
 c12if_p, c12ff_p = np.mean(c12if), np.mean(c12ff)
+
+#%%
+#Pruebo con otros numeros
+#c14m_p = 100
 #%%
 
 #Cantidad de valores que voy a generar en cada Montecarlo
@@ -79,8 +83,13 @@ numero, bins = np.histogram(Rtot, bins = bines) #numero=numero de entradas por b
 error = np.sqrt(numero) / (np.diff(bins)* np.sum(numero)) #error poissoniano
 numero = numero / (np.diff(bins) * np.sum(numero)) #Normalizo a 1 (divido por el área ocupada por el histograma)
 
+ajuste = beta.fit(Rtot)
+
+#%%
 fig = plt.figure(figsize=(10,6))
 plt.bar(bins[:-1], numero, width = np.diff(bins), yerr = error, ecolor="b", color='c', alpha=0.7)
+plt.plot(puntos_a, beta.pdf(puntos_a, ajuste[0], ajuste[1], loc=ajuste[2], scale=ajuste[3]), 'm-')
+#plt.plot(puntos_a, gamma.pdf(puntos_a, ajuste[0], loc=ajuste[1], scale=ajuste[2]), 'm-')
 plt.legend(loc=1, borderaxespad=0.)
 plt.xlim([Rmin, Rmax])
 plt.xlabel('R')
@@ -91,5 +100,5 @@ plt.show()
 
 #%%
 
-edad = -tau*np.log(Rtot)
+#edad = -tau*np.log(Rtot)
 #Acá marca error porque divide por cero (-log(1))
