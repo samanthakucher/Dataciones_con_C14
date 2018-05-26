@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 # A veces este programa tira error, hay que ejecutarlo hasta que ande
 
-num_muestras = int(1e4) #cantidad de variables aleatorias que voy a generar
+num_muestras = int(1e3) #cantidad de variables aleatorias que voy a generar
 mu_std = 178 
 num_mediciones = 10
 c12_muestra, c12_std = 2.75e12, 1e12 # No son variables aleatorias
