@@ -87,22 +87,31 @@ start_time = time.time()
 # Asi como esta planteado el promedio también será la varianza, pero si 
 # x tiene distribución de Poisson, que distribución tendrá su promedio?
 
-Rm = poisson.rvs(c14m_p, size=cant)/uniform.rvs(loc=c12im_p, scale=c12fm_p, size=cant)
-Rf = poisson.rvs(c14f_p, size=cant)/uniform.rvs(loc=c12if_p, scale=c12ff_p, size=cant)
-Rstd = poisson.rvs(c14std_p, size=cant)/uniform.rvs(loc=c12istd_p, scale=c12fstd_p, size=cant)
+#La suma de variables aleatorias poissonianas es poissoniana con parametro \sum \lambda_i
+c14m_sim = poisson.rvs(np.sum(c14m),size=cant)/np.array(len(c14m), float)
+c14f_sim = poisson.rvs(np.sum(c14f),size=cant)/np.array(len(c14f), float)
+c14std_sim = poisson.rvs(np.sum(c14std),size=cant)/np.array(len(c14std), float)
+
+Rm = c14m_sim/uniform.rvs(loc=c12im_p, scale=c12fm_p, size=cant)
+Rf = c14f_sim/uniform.rvs(loc=c12if_p, scale=c12ff_p, size=cant)
+Rstd = c14std_sim/uniform.rvs(loc=c12istd_p, scale=c12fstd_p, size=cant)
 
 Rtot = (Rm-Rf)/(Rstd-Rf)
 # Lo correcto sería restar conteos con fondos primero y luego dividir.
-# Para hacerlo hay que tener tener conteos y fondos por unidad de tiempo y de corriente.
-# De todos modos sugiero dejarlo así y discutirlo después.
+# Para hacerlo hay que tener tener conteos y fondos por unidad de tiempo y de corriente. Por?
+# De todos modos sugiero dejarlo así y discutirlo después. Ok
 
 #Elimino los infinitos
 mask = (Rtot != np.float('+inf'))
 Rtot = Rtot[mask]
-# Falta eliminar los posibles casos en que esta variable tome valores negativos.
+# Elimino los posibles casos en que esta variable tome valores negativos
+mask = (Rtot>=0.00)
+Rtot = Rtot[mask]
 
 # Verifico que para todos los elementos sea cierto que no son +inf
 np.all(Rtot != np.float('+inf'))
+# Verifico que para todos los elementos sea cierto que no son negativos
+np.all(Rtot <= 0.00)
 
 print("--- %s seconds ---" % (time.time() - start_time))
 #%%
@@ -124,11 +133,9 @@ ajuste = beta.fit(Rtot)
 fig = plt.figure(figsize=(10,6))
 plt.bar(bins[:-1], numero, width = np.diff(bins), yerr = error, ecolor="b", color='c', alpha=0.7)
 plt.plot(puntos_a, beta.pdf(puntos_a, ajuste[0], ajuste[1], loc=ajuste[2], scale=ajuste[3]), 'm-')
-#plt.plot(puntos_a, gamma.pdf(puntos_a, ajuste[0], loc=ajuste[1], scale=ajuste[2]), 'm-')
 plt.legend(loc=1, borderaxespad=0.)
 plt.xlim([Rmin, Rmax])
 plt.xlabel('R')
-#plt.ylabel('f(x)')
 plt.title('Histograma')
 plt.grid()
 plt.show()
@@ -145,11 +152,54 @@ plt.show()
 
 # Luego, se puede calcular la dispersión de la variable edad de la muestra y se tendrá su error.
 
+#%%
+
+# 1) Tomo el intervalo de 68% CL para Rtot y lo traduzco en un intervalo para la edad
+# basandome en que la distribución de Rtot se ajusta bien por una beta
+
+intervalo_r = beta.interval(0.68, ajuste[0], ajuste[1], loc=ajuste[2], scale=ajuste[3])
+intervalo_edad_r = [-tau*np.log(intervalo_r[1]), -tau*np.log(intervalo_r[0])]
+
+#%%
+
+# 2) Veo qué distribucion toma la variable edad 
+
+edad = -tau*np.log(Rtot)
+# Construyo el histograma de la variable Edad
+Emin, Emax = np.min(edad), np.max(edad)
+
+puntos_b = np.linspace(Emin, Emax,300) #puntos para graficar f(x)
+bines = np.linspace(Emin, Emax,100)
+numero, bins = np.histogram(edad, bins = bines) #numero=numero de entradas por bin
+error = np.sqrt(numero) / (np.diff(bins)* np.sum(numero)) #error poissoniano
+numero = numero / (np.diff(bins) * np.sum(numero)) #Normalizo a 1 (divido por el área ocupada por el histograma)
+
+# Ajusto el histograma con una pdf beta
+ajuste_t = beta.fit(edad)
+
+#%%
+# Grafico el histograma con el ajuste superpuesto
+fig = plt.figure(figsize=(10,6))
+plt.bar(bins[:-1], numero, width = np.diff(bins), yerr = error, ecolor="b", color='c', alpha=0.7)
+plt.plot(puntos_b, beta.pdf(puntos_b, ajuste_t[0], ajuste_t[1], loc=ajuste_t[2], scale=ajuste_t[3]), 'm-')
+plt.legend(loc=1, borderaxespad=0.)
+plt.xlim([Emin, Emax])
+plt.xlabel('Edad')
+plt.title('Histograma')
+plt.grid()
+plt.show()
+
+#%%
+
+# Tomo el intervalo basandome en que edad tiene distribucion beta
+
+intervalo_edad_hist = beta.interval(0.68, ajuste_t[0], ajuste_t[1], loc=ajuste_t[2], scale=ajuste_t[3])
 
 
+#%%
 
-
-
-
-#edad = -tau*np.log(Rtot)
-#Acá marca error porque divide por cero (-log(1))
+# Comparo ambos metodos
+print('Intervalos para la edad calculados a partir de la distribucion de')
+print('R = ', np.array(intervalo_edad_r,dtype=int))
+print('la edad = ', np.array(intervalo_edad_hist,dtype=int))
+# Da enorme!!
