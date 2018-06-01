@@ -92,12 +92,9 @@ c14m_sim = poisson.rvs(np.sum(c14m),size=cant)/np.array(len(c14m), float)
 c14f_sim = poisson.rvs(np.sum(c14f),size=cant)/np.array(len(c14f), float)
 c14std_sim = poisson.rvs(np.sum(c14std),size=cant)/np.array(len(c14std), float)
 
-# scipy.stats.uniform devuelve uniforme entre loc y loc+scale
-Rm = c14m_sim/uniform.rvs(loc=c12im_p, scale=c12fm_p-c12im_p, size=cant)
-Rf = c14f_sim/uniform.rvs(loc=c12if_p, scale=c12ff_p-c12if_p, size=cant)
-# Para el estándar, la corriente final es más chica que la inicial
-# Por lo tanto los extremos de la uniforme son al revés que en los otros casos
-Rstd = c14std_sim/uniform.rvs(loc=c12fstd_p, scale=c12istd_p-c12fstd_p, size=cant)
+Rm = c14m_sim/uniform.rvs(loc=c12im_p, scale=c12fm_p, size=cant)
+Rf = c14f_sim/uniform.rvs(loc=c12if_p, scale=c12ff_p, size=cant)
+Rstd = c14std_sim/uniform.rvs(loc=c12istd_p, scale=c12fstd_p, size=cant)
 
 Rtot = (Rm-Rf)/(Rstd-Rf)
 # Lo correcto sería restar conteos con fondos primero y luego dividir.
@@ -205,4 +202,4 @@ intervalo_edad_hist = beta.interval(0.68, ajuste_t[0], ajuste_t[1], loc=ajuste_t
 print('Intervalos para la edad calculados a partir de la distribucion de')
 print('R = ', np.array(intervalo_edad_r,dtype=int))
 print('la edad = ', np.array(intervalo_edad_hist,dtype=int))
-# Ahora ya no da enorme! El intervalo es aproximadamente [8150 años, 8800 años]
+# Da enorme!!
