@@ -16,7 +16,7 @@ Created on Wed Jan 24 21:53:45 2018
 # con el ajuste superpuesto.
 
 import numpy as np
-from scipy.stats import poisson, uniform, beta, gamma
+from scipy.stats import poisson, uniform, beta, gamma, norm
 import matplotlib.pyplot as plt
 import time
 
@@ -92,9 +92,19 @@ c14m_sim = poisson.rvs(np.sum(c14m),size=cant)/np.array(len(c14m), float)
 c14f_sim = poisson.rvs(np.sum(c14f),size=cant)/np.array(len(c14f), float)
 c14std_sim = poisson.rvs(np.sum(c14std),size=cant)/np.array(len(c14std), float)
 
-Rm = c14m_sim/uniform.rvs(loc=c12im_p, scale=c12fm_p, size=cant)
-Rf = c14f_sim/uniform.rvs(loc=c12if_p, scale=c12ff_p, size=cant)
-Rstd = c14std_sim/uniform.rvs(loc=c12istd_p, scale=c12fstd_p, size=cant)
+# Como hipótesis alternativa a la de que el conteo de C12 está distribuido
+# uniformemente, consideramos que está distribuido gaussianamente alrededor
+# del valor |If - Ii|/2 * dt / q
+# Esto equivale a decir que la corriente varía linealmente a lo largo del tiempo
+# de medición, aunque con fluctuaciones aleatorias
+# Elijo el sigma tal que el intervalo de 3 sigmas esté comprendido entre c12i y
+# c12f
+c12m_sim = norm.rvs(loc=c12m, scale=np.abs(c12im_p - c12fm_p)/6, size=cant)
+c12f_sim = norm.rvs(loc=c12f, scale=np.abs(c12if_p-c12ff_p)/6, size=cant)
+c12std_sim = norm.rvs(loc=c12std, scale=np.abs(c12istd_p - c12fstd_p)/6, size=cant)
+Rm = c14m_sim / c12m_sim
+Rf = c14f_sim / c12f_sim
+Rstd = c14std_sim / c12std_sim
 
 Rtot = (Rm-Rf)/(Rstd-Rf)
 # Lo correcto sería restar conteos con fondos primero y luego dividir.
@@ -202,4 +212,8 @@ intervalo_edad_hist = beta.interval(0.68, ajuste_t[0], ajuste_t[1], loc=ajuste_t
 print('Intervalos para la edad calculados a partir de la distribucion de')
 print('R = ', np.array(intervalo_edad_r,dtype=int))
 print('la edad = ', np.array(intervalo_edad_hist,dtype=int))
-# Da enorme!!
+# Ahora ya no da enorme!
+# Con corrientes uniformes el intervalo es aproximadamente [8150, 8810] (años)
+# Con corrientes gaussianas también! Incluso reduciendo el sigma a un quinto de
+# |c12i-c12f|/2, a simple vista el intervalo resultante para la edad no cambia
+# apreciablemente

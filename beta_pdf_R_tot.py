@@ -205,4 +205,4 @@ intervalo_edad_hist = beta.interval(0.68, ajuste_t[0], ajuste_t[1], loc=ajuste_t
 print('Intervalos para la edad calculados a partir de la distribucion de')
 print('R = ', np.array(intervalo_edad_r,dtype=int))
 print('la edad = ', np.array(intervalo_edad_hist,dtype=int))
-# Ahora ya no da enorme! El intervalo es aproximadamente [8150 años, 8800 años]
+# Ahora ya no da enorme! El intervalo es aproximadamente [8150 años, 8810 años]
