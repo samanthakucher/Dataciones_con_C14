@@ -62,9 +62,9 @@ Rstd = c14std_sim/uniform.rvs(loc=c12fstd_p, scale=c12istd_p-c12fstd_p, size=can
 # Voy simulando las mediciones de a una y ajusto por una beta, cuyos
 # parametros guardo en 4 vectores
 start_time = time.time()
-edad, param_beta_0, param_beta_1, param_beta_2, param_beta_3 = [],[],[],[],[]
-for i in range(len(c14m)):
-    Rm = poisson.rvs(c14m[i], size=cant)/uniform.rvs(loc=min(c12im[i], c12fm[i]), scale=abs(c12fm[i]-c12im[i]), size=cant)
+R, param_beta_0, param_beta_1, param_beta_2, param_beta_3 = [],[],[],[],[]
+for i in range(1,len(c14m)+1):
+    Rm = poisson.rvs(np.mean(c14m[:i]), size=cant)/uniform.rvs(loc=min(np.mean(c12im[:i]), np.mean(c12fm[:i])), scale=abs(np.mean(c12fm[:i])-np.mean(c12im[:i])), size=cant)
     Rtot = (Rm-Rf)/(Rstd-Rf)
     #Elimino los infinitos
     mask = (Rtot != np.float('+inf'))
@@ -72,8 +72,8 @@ for i in range(len(c14m)):
     # Elimino los posibles casos en que esta variable tome valores negativos
     mask = (Rtot>=0.00)
     Rtot = Rtot[mask]
-    edad = -tau*np.log(Rtot)
-    ajuste = beta.fit(edad)
+    R.append(np.mean(Rtot))
+    ajuste = beta.fit(Rtot)
     param_beta_0.append(ajuste[0])
     param_beta_1.append(ajuste[1])
     param_beta_2.append(ajuste[2])
@@ -81,18 +81,20 @@ for i in range(len(c14m)):
 print("--- %s seconds ---" % (time.time() - start_time))
 #%%
 
+aa,bb = np.linspace(min(param_beta_0),max(param_beta_0),100), np.linspace(min(param_beta_1),max(param_beta_1), 100)
+volumen = np.zeros(shape=(100,100, len(R)))
+for k in range(len(R)):
+    print('k=',k)
+    for s in range(100):
+        for j in range(100):
+            volumen[i, j, k] = beta.pdf(R[k], aa[s], bb[j])
+#%%
 plt.ion()
 fig = plt.figure()
-for i in range(len(c14m)):
-    ax = fig.add_subplot(111, projection='3d')
-    aa,bb = np.linspace(min(param_beta_0),max(param_beta_0),100), np.linspace(min(param_beta_1),max(param_beta_1), 100)
-    matriz = np.zeros((100,100))
-    for j in range(100):
-        #matriz[j,:] = beta.pdf(edad[i], aa[j], bb, loc=param_beta_2[i], scale=param_beta_3[i])
-        matriz[j,:] = beta.pdf((edad[i]-param_beta_2[i])/param_beta_3[i], aa[j], bb, loc=0, scale=1)
-
-    (x, y) = np.meshgrid(aa,bb)
-    ax.plot_surface(x,y,matriz, cmap=cm.brg)
+ax = fig.add_subplot(111, projection='3d')
+(x, y) = np.meshgrid(aa,bb)
+for k in range(len(R)):
+    ax.plot_surface(x,y,volumen[:,:,k], cmap=cm.brg)
     ax.set_title(i)
     ax.set_xlabel('a')
     ax.set_ylabel('b')
@@ -101,5 +103,9 @@ for i in range(len(c14m)):
     plt.pause(1)
     plt.cla()
 
-
-
+#%%
+k=0   
+plt.ion()
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(x,y,volumen[:,:,k], cmap=cm.brg)
