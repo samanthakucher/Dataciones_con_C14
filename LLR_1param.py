@@ -16,10 +16,11 @@ def likelihood(Edad, rs, ts, e_m, R_s, R_f, tau=5730/np.log(2)):
     los alemanes" para la Edad y que toda la variabilidad es debida
     a la variabilidad en el conteo de 14C de la muestra.
     
-    Esta función no es muy útil, porque los factoriales se vuelven tan
-    grandes que no es posible convertirlos a float."""
+    
+    ESTA FUNCIÓN NO ANDA. El factorial se vuelve tan grande que no es posible
+    convertirlo a float."""
     assert len(rs)==len(ts), "rs y ts deben tener igual longitud"
-    R_m = R_s + (R_s - R_f) * np.exp(-Edad / tau)
+    R_m = R_f + (R_s - R_f) * np.exp(-Edad / tau)
     lambda_m = R_m * e_m
     L = 1
     for r, t in zip(rs, ts):
@@ -34,12 +35,12 @@ def loglikelihood(Edad, rs, ts, e_m, R_s, R_f, tau=5730/np.log(2)):
     los alemanes" para la Edad y que toda la variabilidad es debida
     a la variabilidad en el conteo de 14C de la muestra."""
     assert len(rs)==len(ts), "rs y ts deben tener igual longitud"
-    R_m = R_s + (R_s - R_f) * np.exp(-Edad / tau)
+    R_m = R_f + (R_s - R_f) * np.exp(-Edad / tau)
     lambda_m = R_m * e_m
     # e_m * rs puede no ser entero, voy a usar la función gama en vez del
     # factorial.
     terminos = -lambda_m*ts + e_m*rs*np.log(lambda_m*ts) + gammaln(e_m*rs)
-    return sum(terminos)
+    return np.sum(terminos)
     
 
 if __name__ == '__main__':
