@@ -7,7 +7,6 @@ Created on Sat Aug 25 18:14:57 2018
 """
 
 import numpy as np
-from math import factorial
 from scipy.special import gammaln
 import matplotlib.pyplot as plt
 
@@ -39,10 +38,37 @@ def loglikelihood(Edad, rs, ts, e_m, R_s, R_f, tau=5730/np.log(2)):
             lambda_m = lambda_m[:,np.newaxis, np.newaxis]
             
     # e_m * rs puede no ser entero, voy a usar la función gama en vez del
-    # factorial.
+    # factorial. Recordar que si n es entero positivo, n! == gamma(n+1)
+    # y que gamma para los reales negativos es otra cosa totalmente distinta
     terminos = ( -lambda_m * ts + e_m * rs * np.log(lambda_m * ts)
-                - gammaln(e_m * rs) )
-    return np.sum(terminos, axis=-1)
+                - gammaln(e_m * rs + 1) )
+#    return np.sum(terminos, axis=-1)
+    return terminos[:, 0] # Prueba
+
+def loglikelihood_simpl(lambda_m, rs, ts, e_m, R_s, R_f, tau=5730/np.log(2)):
+    """Loglikelihood de una Edad de la muestra dadas las mediciones
+    rs de la relación isotópica de la misma. Se asume la "fórmula de
+    los alemanes" para la Edad y que toda la variabilidad es debida
+    a la variabilidad en el conteo de 14C de la muestra.
+    Si rs, ts son arrays 2d, para poder evaluar la función en múltiples puntos,
+    la primera dimensión debe indexar el vector en el que se quiere evaluar y
+    la segunda dimensión debe indexar las componentes del vector. Edad también
+    puede ser un array en vez de un float (pero solo 1d)."""
+    assert rs.shape == ts.shape, "rs y ts deben tener igual shape"
+    assert (rs.ndim == 1) or (rs.ndim == 2), "rs, ts deben ser 1d, o 2d"
+    
+    if isinstance(lambda_m, np.ndarray): # Para broadcasting correcto
+        if rs.ndim == 1:
+            lambda_m = lambda_m[:,np.newaxis]
+        elif rs.ndim == 2:
+            lambda_m = lambda_m[:,np.newaxis, np.newaxis]
+            
+    terminos = ( -lambda_m * ts + e_m * rs * np.log(lambda_m * ts)
+                - gammaln(e_m * rs + 1) )
+#    return np.sum(terminos, axis=-1)
+    return terminos[:, 0] # Prueba
+
+
     
 
 if __name__ == '__main__':
@@ -83,7 +109,7 @@ if __name__ == '__main__':
 
     LL_fijtot = lambda edad: loglikelihood(edad, rs_m, ts_m, e_m, R_s, R_f)
     # funciona!
-
+#%%
     # Veamos que se obtiene de reemplazar estos datos en la fórmula para la edad
     edad_esperada = Edad_func(rs_m, R_s, R_f)
     print(('{:.0f}\n'*len(rs_m)).format(*edad_esperada))
@@ -93,9 +119,9 @@ if __name__ == '__main__':
     # Es decir que con estos datos deberíamos ver que la verosimilitud
     # se maximiza alrededor de Edad = 9000
     
-    edades1 = np.linspace(0, 20000, 1000)
+    edades1 = np.linspace(0, int(1e4), 1000)
     lls1 = LL_fijtot(edades1)
-    edades2 = np.linspace(0, int(1e7), 1000)
+    edades2 = np.linspace(0, int(1e5), 10000)
     lls2 = LL_fijtot(edades2)
     fig, (ax1, ax2) = plt.subplots(1, 2)
     ax1.plot(edades1, lls1, '-', color='dodgerblue')
@@ -104,7 +130,7 @@ if __name__ == '__main__':
     
     # Esto no ocurre: en cambio vemos que el loglikelihood se plancha en un
     # valor de saturación alrededor de Edad = 50.000    
-    
+#%%    
     # Por otro lado, veamos si pasa algo razonable al considerar la verosim
     # como función de los datos, con parámetro fijo.
     LL_fij3 = lambda edad, rs_m, ts_m: loglikelihood(edad, rs_m, ts_m, e_m, R_s, R_f)
@@ -122,11 +148,17 @@ if __name__ == '__main__':
     
     # Vemos que hay un máximo de probabilidad para todos los r iguales a
     argmax_ll = rs[np.argmax(lls),0] # -> 8.98 e-11
-
+#%%
+    # Veamos qué sale con una verosimilitud "simplificada" en la que
+    # en vez de meter la edad, metemos lambda_m
     
-
-    
-    
-    
-    
+    LL_simpl_fijtot = lambda lambda_m: loglikelihood_simpl(lambda_m, rs_m, ts_m, e_m, R_s, R_f)
+    lambdas1 = np.linspace(0, int(1e4), 1000)
+    lls1 = LL_simpl_fijtot(lambdas1)
+    lambdas2 = np.linspace(0, int(1e5), 1000)
+    lls2 = LL_simpl_fijtot(lambdas2)
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.plot(lambdas1, lls1, '-', color='dodgerblue')
+    ax2.plot(lambdas2, lls2, '-', color='dodgerblue')
+    fig.tight_layout()
     
