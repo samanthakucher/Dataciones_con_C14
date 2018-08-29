@@ -9,38 +9,40 @@ Created on Sat Aug 25 18:14:57 2018
 import numpy as np
 from math import factorial
 from scipy.special import gammaln
+import matplotlib.pyplot as plt
 
-def likelihood(Edad, rs, ts, e_m, R_s, R_f, tau=5730/np.log(2)):
-    """Verosimilitud de una Edad de la muestra dadas las mediciones
-    rs de la relación isotópica de la misma. Se asume la "fórmula de
-    los alemanes" para la Edad y que toda la variabilidad es debida
-    a la variabilidad en el conteo de 14C de la muestra.
-    
-    
-    ESTA FUNCIÓN NO ANDA. El factorial se vuelve tan grande que no es posible
-    convertirlo a float."""
-    assert len(rs)==len(ts), "rs y ts deben tener igual longitud"
-    R_m = R_f + (R_s - R_f) * np.exp(-Edad / tau)
-    lambda_m = R_m * e_m
-    L = 1
-    for r, t in zip(rs, ts):
-        mu = lambda_m * t
-        k = np.floor(e_m * r) # Para evaluar el factorial, el arg debe ser int
-        L = L * np.exp(-mu) * (mu)**(k) / factorial(k)
-    return L
+def Edad_func(R_m, R_s, R_f, tau=5730/np.log(2)):
+    return -tau * np.log((R_m - R_f) / (R_s - R_f))
+
+def R_m_func(Edad, R_f, R_s, tau=5730/np.log(2)):
+    return R_f + (R_s - R_f) * np.exp(-Edad / tau)
 
 def loglikelihood(Edad, rs, ts, e_m, R_s, R_f, tau=5730/np.log(2)):
     """Loglikelihood de una Edad de la muestra dadas las mediciones
     rs de la relación isotópica de la misma. Se asume la "fórmula de
     los alemanes" para la Edad y que toda la variabilidad es debida
-    a la variabilidad en el conteo de 14C de la muestra."""
-    assert len(rs)==len(ts), "rs y ts deben tener igual longitud"
-    R_m = R_f + (R_s - R_f) * np.exp(-Edad / tau)
+    a la variabilidad en el conteo de 14C de la muestra.
+    Si rs, ts son arrays 2d, para poder evaluar la función en múltiples puntos,
+    la primera dimensión debe indexar el vector en el que se quiere evaluar y
+    la segunda dimensión debe indexar las componentes del vector. Edad también
+    puede ser un array en vez de un float (pero solo 1d)."""
+    assert rs.shape == ts.shape, "rs y ts deben tener igual shape"
+    assert (rs.ndim == 1) or (rs.ndim == 2), "rs, ts deben ser 1d, o 2d"
+    
+    R_m = R_m_func(Edad, R_f, R_s)
     lambda_m = R_m * e_m
+    
+    if isinstance(Edad, np.ndarray): # Para broadcasting correcto
+        if rs.ndim == 1:
+            lambda_m = lambda_m[:,np.newaxis]
+        elif rs.ndim == 2:
+            lambda_m = lambda_m[:,np.newaxis, np.newaxis]
+            
     # e_m * rs puede no ser entero, voy a usar la función gama en vez del
     # factorial.
-    terminos = -lambda_m*ts + e_m*rs*np.log(lambda_m*ts) + gammaln(e_m*rs)
-    return np.sum(terminos)
+    terminos = ( -lambda_m * ts + e_m * rs * np.log(lambda_m * ts)
+                - gammaln(e_m * rs) )
+    return np.sum(terminos, axis=-1)
     
 
 if __name__ == '__main__':
@@ -78,5 +80,53 @@ if __name__ == '__main__':
     R_s = np.average(c14s / c12s)
     R_f = np.average(c14f / c12f)
 
-    L = lambda edad: loglikelihood(edad, rs_m, ts_m, e_m, R_s, R_f)
+
+    LL_fijtot = lambda edad: loglikelihood(edad, rs_m, ts_m, e_m, R_s, R_f)
     # funciona!
+
+    # Veamos que se obtiene de reemplazar estos datos en la fórmula para la edad
+    edad_esperada = Edad_func(rs_m, R_s, R_f)
+    print(('{:.0f}\n'*len(rs_m)).format(*edad_esperada))
+    print('Promedio: {:.0f} +/- {:.0f}'.format(np.mean(edad_esperada),
+          np.std(edad_esperada)))
+
+    # Es decir que con estos datos deberíamos ver que la verosimilitud
+    # se maximiza alrededor de Edad = 9000
+    
+    edades1 = np.linspace(0, 20000, 1000)
+    lls1 = LL_fijtot(edades1)
+    edades2 = np.linspace(0, int(1e7), 1000)
+    lls2 = LL_fijtot(edades2)
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.plot(edades1, lls1, '-', color='dodgerblue')
+    ax2.plot(edades2, lls2, '-', color='dodgerblue')
+    fig.tight_layout()
+    
+    # Esto no ocurre: en cambio vemos que el loglikelihood se plancha en un
+    # valor de saturación alrededor de Edad = 50.000    
+    
+    # Por otro lado, veamos si pasa algo razonable al considerar la verosim
+    # como función de los datos, con parámetro fijo.
+    LL_fij3 = lambda edad, rs_m, ts_m: loglikelihood(edad, rs_m, ts_m, e_m, R_s, R_f)
+    ts = np.ones((1000, 22)) * 300
+    edad = 9000
+    # Sup que todas las 22 mediciones dan exactamente lo mismo, y variamos
+    # cuánto es que dan
+    rs = np.zeros((1000, 22))
+    for i in range(22):
+        rs[:,i] = np.linspace(0, 3e-10, 1000)
+    lls = LL_fij3(edad, rs, ts)
+    
+    fig, ax = plt.subplots()
+    ax.plot(rs[:,0], lls, '-', color='deeppink')
+    
+    # Vemos que hay un máximo de probabilidad para todos los r iguales a
+    argmax_ll = rs[np.argmax(lls),0] # -> 8.98 e-11
+
+    
+
+    
+    
+    
+    
+    
