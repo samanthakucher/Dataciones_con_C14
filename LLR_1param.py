@@ -31,6 +31,7 @@ def loglikelihood(Edad, rs, ts, e_m, R_s, R_f, tau=5730/np.log(2)):
     R_m = R_m_func(Edad, R_f, R_s)
     lambda_m = R_m * e_m
     
+    
     if isinstance(Edad, np.ndarray): # Para broadcasting correcto
         if rs.ndim == 1:
             lambda_m = lambda_m[:,np.newaxis]
@@ -40,34 +41,10 @@ def loglikelihood(Edad, rs, ts, e_m, R_s, R_f, tau=5730/np.log(2)):
     # e_m * rs puede no ser entero, voy a usar la función gama en vez del
     # factorial. Recordar que si n es entero positivo, n! == gamma(n+1)
     # y que gamma para los reales negativos es otra cosa totalmente distinta
-    terminos = ( -lambda_m * ts + e_m * rs * np.log(lambda_m * ts)
+    terminos = ( -lambda_m * ts + e_m * rs * ts * np.log(lambda_m * ts)
                 - gammaln(e_m * rs + 1) )
-#    return np.sum(terminos, axis=-1)
-    return terminos[:, 0] # Prueba
-
-def loglikelihood_simpl(lambda_m, rs, ts, e_m, R_s, R_f, tau=5730/np.log(2)):
-    """Loglikelihood de una Edad de la muestra dadas las mediciones
-    rs de la relación isotópica de la misma. Se asume la "fórmula de
-    los alemanes" para la Edad y que toda la variabilidad es debida
-    a la variabilidad en el conteo de 14C de la muestra.
-    Si rs, ts son arrays 2d, para poder evaluar la función en múltiples puntos,
-    la primera dimensión debe indexar el vector en el que se quiere evaluar y
-    la segunda dimensión debe indexar las componentes del vector. Edad también
-    puede ser un array en vez de un float (pero solo 1d)."""
-    assert rs.shape == ts.shape, "rs y ts deben tener igual shape"
-    assert (rs.ndim == 1) or (rs.ndim == 2), "rs, ts deben ser 1d, o 2d"
-    
-    if isinstance(lambda_m, np.ndarray): # Para broadcasting correcto
-        if rs.ndim == 1:
-            lambda_m = lambda_m[:,np.newaxis]
-        elif rs.ndim == 2:
-            lambda_m = lambda_m[:,np.newaxis, np.newaxis]
-            
-    terminos = ( -lambda_m * ts + e_m * rs * np.log(lambda_m * ts)
-                - gammaln(e_m * rs + 1) )
-#    return np.sum(terminos, axis=-1)
-    return terminos[:, 0] # Prueba
-
+    return np.sum(terminos, axis=-1)
+#    return terminos[:, 0] # Prueba
 
     
 
@@ -118,7 +95,7 @@ if __name__ == '__main__':
 
     # Es decir que con estos datos deberíamos ver que la verosimilitud
     # se maximiza alrededor de Edad = 9000
-    
+#%%
     edades1 = np.linspace(0, int(1e4), 1000)
     lls1 = LL_fijtot(edades1)
     edades2 = np.linspace(0, int(1e5), 10000)
@@ -128,8 +105,29 @@ if __name__ == '__main__':
     ax2.plot(edades2, lls2, '-', color='dodgerblue')
     fig.tight_layout()
     
-    # Esto no ocurre: en cambio vemos que el loglikelihood se plancha en un
-    # valor de saturación alrededor de Edad = 50.000    
+    # Vemos que el loglikelihood tiene un máximo aprox en 10473 años
+#%%
+    # Hago una grilla cerquita de ese valor p/ determinar el máximo
+    # con mayor precisión.
+    es = np.linspace(8000, 10000, int(1e6))
+    precision_horizontal = np.diff(es)[0] # error debido al mesh despreciable
+    lls = LL_fijtot(es)
+    llmax = np.max(lls)
+    ind_intervalo = np.where(lls >= (llmax - 1/2))[0]
+    ind_L, ind_U = min(ind_intervalo), max(ind_intervalo)
+    e_L, e_U = es[ind_L], es[ind_U]
+    argllmax = es[np.argmax(lls)]
+    
+    with plt.style.context(('seaborn')):
+        fig, ax = plt.subplots()
+    ax.plot(es, lls, '-', color='dodgerblue')
+    ax.plot(argllmax, llmax, 'ro')
+    ax.axvline(e_L, color='deeppink')
+    ax.axvline(e_U, color='deeppink')
+    print('La edad de Máxima Verosimilitud es {:.0f} años.'.format(argllmax))
+    print('El intervalo LLR con esta verosimilitud es [{:.0f}, {:.0f}] años.'.format(e_L, e_U))
+    print('Error relativo del {:.2f}%.'.format((e_U - e_L) / argllmax * 100))
+    
 #%%    
     # Por otro lado, veamos si pasa algo razonable al considerar la verosim
     # como función de los datos, con parámetro fijo.
@@ -146,19 +144,5 @@ if __name__ == '__main__':
     fig, ax = plt.subplots()
     ax.plot(rs[:,0], lls, '-', color='deeppink')
     
-    # Vemos que hay un máximo de probabilidad para todos los r iguales a
-    argmax_ll = rs[np.argmax(lls),0] # -> 8.98 e-11
-#%%
-    # Veamos qué sale con una verosimilitud "simplificada" en la que
-    # en vez de meter la edad, metemos lambda_m
-    
-    LL_simpl_fijtot = lambda lambda_m: loglikelihood_simpl(lambda_m, rs_m, ts_m, e_m, R_s, R_f)
-    lambdas1 = np.linspace(0, int(1e4), 1000)
-    lls1 = LL_simpl_fijtot(lambdas1)
-    lambdas2 = np.linspace(0, int(1e5), 1000)
-    lls2 = LL_simpl_fijtot(lambdas2)
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-    ax1.plot(lambdas1, lls1, '-', color='dodgerblue')
-    ax2.plot(lambdas2, lls2, '-', color='dodgerblue')
-    fig.tight_layout()
-    
+    # Este gráfico no está dando algo lindo pero hay que revisar el
+    # código porque ya quedó viejo
