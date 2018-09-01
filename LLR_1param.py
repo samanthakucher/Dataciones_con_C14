@@ -132,7 +132,7 @@ if __name__ == '__main__':
     ax.axvline(e_U, color='deeppink')
     print('Gráficamente, la edad de Máxima Verosimilitud es {:.0f} años.'.format(argllmax))
     print('El intervalo LLR con esta verosimilitud es [{:.0f}, {:.0f}] años.'.format(e_L, e_U))
-    print('Error relativo del {:.2f}%.'.format((e_U - e_L) / argllmax * 100))
+    print('Error relativo del {:.2f}%.'.format((e_U - e_L) / (2 * argllmax) * 100))
     
 #%%    
     # Por otro lado, veamos si pasa algo razonable al considerar la verosim
