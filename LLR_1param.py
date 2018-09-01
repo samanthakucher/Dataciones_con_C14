@@ -31,7 +31,6 @@ def loglikelihood(Edad, rs, ts, e_m, R_s, R_f, tau=5730/np.log(2)):
     R_m = R_m_func(Edad, R_f, R_s)
     lambda_m = R_m * e_m
     
-    
     if isinstance(Edad, np.ndarray): # Para broadcasting correcto
         if rs.ndim == 1:
             lambda_m = lambda_m[:,np.newaxis]
@@ -42,7 +41,7 @@ def loglikelihood(Edad, rs, ts, e_m, R_s, R_f, tau=5730/np.log(2)):
     # factorial. Recordar que si n es entero positivo, n! == gamma(n+1)
     # y que gamma para los reales negativos es otra cosa totalmente distinta
     terminos = ( -lambda_m * ts + e_m * rs * ts * np.log(lambda_m * ts)
-                - gammaln(e_m * rs + 1) )
+                - gammaln(e_m * rs * ts + 1) )
     return np.sum(terminos, axis=-1)
 #    return terminos[:, 0] # Prueba
 
@@ -89,8 +88,9 @@ if __name__ == '__main__':
 #%%
     # Veamos que se obtiene de reemplazar estos datos en la fórmula para la edad
     edad_esperada = Edad_func(rs_m, R_s, R_f)
-    print(('{:.0f}\n'*len(rs_m)).format(*edad_esperada))
-    print('Promedio: {:.0f} +/- {:.0f}'.format(np.mean(edad_esperada),
+    print('Edades que se obtienen con cada valor de r_m, dejando fijos R_s y R_f:')
+    print(('{:.0f} '*len(rs_m)).format(*edad_esperada))
+    print('Promedio y desviación estándar: {:.0f} +/- {:.0f} años'.format(np.mean(edad_esperada),
           np.std(edad_esperada)))
 
     # Es decir que con estos datos deberíamos ver que la verosimilitud
@@ -105,7 +105,13 @@ if __name__ == '__main__':
     ax2.plot(edades2, lls2, '-', color='dodgerblue')
     fig.tight_layout()
     
-    # Vemos que el loglikelihood tiene un máximo aprox en 10473 años
+    # Vemos que el loglikelihood tiene un máximo aprox en 9000 años.
+    # Hacemos la cuenta de la edad de Máxima Verosimilitud de manera analítica:
+    
+    r_bar = np.average(rs_m)
+    edad_MV = Edad_func(r_bar, R_s, R_f)
+    print('La edad de Máxima Verosimilitud es {:.0f} años'.format(edad_MV))
+    # La edad de Máxima Verosimilitud es 8797 años
 #%%
     # Hago una grilla cerquita de ese valor p/ determinar el máximo
     # con mayor precisión.
@@ -124,25 +130,43 @@ if __name__ == '__main__':
     ax.plot(argllmax, llmax, 'ro')
     ax.axvline(e_L, color='deeppink')
     ax.axvline(e_U, color='deeppink')
-    print('La edad de Máxima Verosimilitud es {:.0f} años.'.format(argllmax))
+    print('Gráficamente, la edad de Máxima Verosimilitud es {:.0f} años.'.format(argllmax))
     print('El intervalo LLR con esta verosimilitud es [{:.0f}, {:.0f}] años.'.format(e_L, e_U))
     print('Error relativo del {:.2f}%.'.format((e_U - e_L) / argllmax * 100))
     
 #%%    
     # Por otro lado, veamos si pasa algo razonable al considerar la verosim
     # como función de los datos, con parámetro fijo.
-    LL_fij3 = lambda edad, rs_m, ts_m: loglikelihood(edad, rs_m, ts_m, e_m, R_s, R_f)
-    ts = np.ones((1000, 22)) * 300
-    edad = 9000
+    edad = edad_MV
+    # El valor para el que se maximiza la prob. debería ser alrededor de 
+    rmax = R_m_func(edad, R_f, R_s) # -> 3.040115467990185e-13
     # Sup que todas las 22 mediciones dan exactamente lo mismo, y variamos
-    # cuánto es que dan
-    rs = np.zeros((1000, 22))
-    for i in range(22):
-        rs[:,i] = np.linspace(0, 3e-10, 1000)
-    lls = LL_fij3(edad, rs, ts)
+    # el valor que pueden adoptar:
     
+    def variar_valor_rs(npuntos, rmin, rmax, tiempo):
+        ts = np.ones((npuntos, 22)) * tiempo # tiempo de medición
+        rs = np.zeros((npuntos, 22)) 
+        for i in range(22):
+            rs[:,i] = np.linspace(rmin, rmax, npuntos)
+        return ts, rs
+    
+    LL_fij3 = lambda edad, rs_m, ts_m: loglikelihood(edad, rs_m, ts_m, e_m, R_s, R_f)
+    
+    ts, rs = variar_valor_rs(int(1e5), 0, 1e-12, 300) # meds de 300 segundos
+    lls = LL_fij3(edad, rs, ts)
     fig, ax = plt.subplots()
     ax.plot(rs[:,0], lls, '-', color='deeppink')
     
-    # Este gráfico no está dando algo lindo pero hay que revisar el
-    # código porque ya quedó viejo
+    # Efectivamente, vemos un máximo en el lugar predicho.
+    # Ya que estamos, grafiquemos la probabilidad también:
+    
+    ts, rs = variar_valor_rs(int(1e5), 1e-13, 5e-13, 300)
+    lls = LL_fij3(edad, rs, ts)
+    ls = np.exp(lls)
+    fig, ax = plt.subplots()
+    ax.plot(rs[:,0], ls, '-', color='deeppink')
+    
+    # Guau, la distribución es básicamente una gaussiana muy, muy angosta,
+    # de sigma ~ 1e-15.
+
+    
