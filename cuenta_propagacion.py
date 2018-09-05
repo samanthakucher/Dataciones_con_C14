@@ -79,7 +79,7 @@ i_m_p = (np.max(Ifm_medicion)+np.min(Iim_medicion))/2
 i_f_p = (np.max(Iff_medicion)+np.min(Iif_medicion))/2
 i_s_p = (np.max(Ifstd_medicion)+np.min(Iistd_medicion))/2
 
-err_c14std_p, err_c14m_p, err_c14f_p = np.sqrt(c14std_p), np.std(c14m_p), np.std(c14f_p)
+err_c14std_p, err_c14m_p, err_c14f_p = np.sqrt(c14std_p), np.sqrt(c14m_p), np.sqrt(c14f_p)
 
 err_i_m_p = (np.max(Ifm_medicion)-np.min(Iim_medicion))/2
 err_i_f_p = (np.max(Iff_medicion)-np.min(Iif_medicion))/2
@@ -98,8 +98,15 @@ error_edad_valor = error_edad.subs({c14m:c14m_p, c14f:c14f_p,c14s:c14std_p, i_m:
 
 error_edad_valor
 
+#%%
 
+#Si solo consideramos que varia el carbono 14 de la muestra
 
+error_edad_c14m = sqrt((dedc14m**2)*(dcm**2))
+
+error_edad_c14m_valor = error_edad_c14m.subs({c14m:c14m_p, c14f:c14f_p,c14s:c14std_p, i_m:i_m_p, i_f:i_f_p, i_s:i_s_p, tiempo:300, tau:tau_valor, carga:q, dcm:err_c14m_p, dcf:err_c14f_p, dcs:err_c14std_p, dim:err_i_m_p, dif:err_i_f_p, dis:err_i_s_p})
+
+error_edad_c14m_valor
 
 
 
