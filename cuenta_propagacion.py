@@ -79,11 +79,12 @@ i_m_p = (np.max(Ifm_medicion)+np.min(Iim_medicion))/2
 i_f_p = (np.max(Iff_medicion)+np.min(Iif_medicion))/2
 i_s_p = (np.max(Ifstd_medicion)+np.min(Iistd_medicion))/2
 
-err_c14std_p, err_c14m_p, err_c14f_p = np.sqrt(c14std_p), np.sqrt(c14m_p), np.sqrt(c14f_p)
+err_c14std_p, err_c14m_p, err_c14f_p = np.sqrt(c14std_p)/np.sqrt(len(c14std_medicion)), np.sqrt(c14m_p)/np.sqrt(len(c14m_medicion)), np.sqrt(c14f_p)/np.sqrt(len(c14f_medicion))
 
-err_i_m_p = (np.max(Ifm_medicion)-np.min(Iim_medicion))/2
-err_i_f_p = (np.max(Iff_medicion)-np.min(Iif_medicion))/2
-err_i_s_p = (np.max(Ifstd_medicion)-np.min(Iistd_medicion))/2
+largo_im, largo_if, largo_is = len(Ifm_medicion), len(Iff_medicion), len(Ifstd_medicion)
+err_i_m_p = ((np.max(Ifm_medicion)-np.min(Iim_medicion))/2)/np.sqrt(largo_im)
+err_i_f_p = ((np.max(Iff_medicion)-np.min(Iif_medicion))/2)/np.sqrt(largo_im)
+err_i_s_p = ((np.max(Ifstd_medicion)-np.min(Iistd_medicion))/2)/np.sqrt(largo_im)
 
 #%%
 
