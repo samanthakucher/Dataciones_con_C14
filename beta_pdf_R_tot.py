@@ -180,17 +180,7 @@ numero = numero / (np.diff(bins) * np.sum(numero)) #Normalizo a 1 (divido por el
 # Ajusto el histograma con una pdf beta
 ajuste_t = beta.fit(edad)
 
-#%%
-# Grafico el histograma con el ajuste superpuesto
-fig = plt.figure(figsize=(10,6))
-plt.bar(bins[:-1], numero, width = np.diff(bins), yerr = error, ecolor="b", color='c', alpha=0.7)
-plt.plot(puntos_b, beta.pdf(puntos_b, ajuste_t[0], ajuste_t[1], loc=ajuste_t[2], scale=ajuste_t[3]), 'm-')
-plt.legend(loc=1, borderaxespad=0.)
-plt.xlim([Emin, Emax])
-plt.xlabel('Edad')
-plt.title('Histograma')
-plt.grid()
-plt.show()
+
 
 #%%
 
@@ -198,6 +188,22 @@ plt.show()
 
 intervalo_edad_hist = beta.interval(0.68, ajuste_t[0], ajuste_t[1], loc=ajuste_t[2], scale=ajuste_t[3])
 
+#%%
+# Grafico el histograma con el ajuste superpuesto
+fig = plt.figure(figsize=(10,6))
+plt.bar(bins[:-1], numero, width = np.diff(bins), yerr = error, ecolor="b", color='c', alpha=0.7)
+#plt.plot(puntos_b, beta.pdf(puntos_b, ajuste_t[0], ajuste_t[1], loc=ajuste_t[2], scale=ajuste_t[3]), 'm-')
+#plt.legend(loc=1, borderaxespad=0.)
+plt.xlim([Emin, Emax])
+plt.xticks(fontsize=12)
+plt.yticks(fontsize=12)
+plt.xlabel('Edad (años)', fontsize=12)
+plt.ylabel('P(Edad)', fontsize=12)
+plt.vlines(intervalo_edad_hist[0], ymin=0, ymax=beta.pdf(intervalo_edad_hist[0], ajuste_t[0], ajuste_t[1], loc=ajuste_t[2], scale=ajuste_t[3]), color='r')
+plt.vlines(intervalo_edad_hist[1], ymin=0, ymax=beta.pdf(intervalo_edad_hist[1], ajuste_t[0], ajuste_t[1], loc=ajuste_t[2], scale=ajuste_t[3]), color='r')
+#plt.title('Histograma')
+plt.grid()
+plt.show()
 
 #%%
 
