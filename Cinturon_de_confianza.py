@@ -44,7 +44,7 @@ c12istd, c12fstd = Iistd*dtstd/q, Ifstd*dtstd/q
 c12im, c12fm = Iim*dtm/q, Ifm*dtm/q 
 c12if, c12ff = Iif*dtf/q, Iff*dtf/q 
 
-#%%
+
 
 # Lo que sigue es válido sólo cuando las mediciones son todas de igual duración.
 # Aunque no es necesario tener el mismo número de mediciones para todos los casos.
@@ -67,7 +67,7 @@ c12istd_p, c12fstd_p = np.mean(c12istd), np.mean(c12fstd)
 c12std=(c12istd_p+c12fstd_p)/2
 print("--- %s cuentas de 12C durante la medición del estandar" % c12std)
 
-#%%
+
 
 #Cantidad de valores que voy a generar en cada Montecarlo
 cant = int(1e4)
@@ -111,7 +111,7 @@ np.all(Rtot <= 0.00)
 
 print("--- %s seconds ---" % (time.time() - start_time))
 
-#%%
+
 
 edad = -tau*np.log(Rtot)
 # Construyo el histograma de la variable Edad
@@ -122,7 +122,7 @@ bines = np.linspace(Emin, Emax,100)
 numero, bins = np.histogram(edad, bins = bines) #numero=numero de entradas por bin
 error = np.sqrt(numero) / (np.diff(bins)* np.sum(numero)) #error poissoniano
 numero = numero / (np.diff(bins) * np.sum(numero)) #Normalizo a 1 (divido por el área ocupada por el histograma)
-#%%
+
 fig = plt.figure(figsize=(10,6))
 plt.bar(bins[:-1], numero, width = np.diff(bins), yerr = error, ecolor="b", color='c', alpha=0.7)
 #plt.plot(puntos_b, beta.pdf(puntos_b, ajuste_t[0], ajuste_t[1], loc=ajuste_t[2], scale=ajuste_t[3]), 'm-')
@@ -136,7 +136,7 @@ plt.ylabel('P(Edad)', fontsize=12)
 plt.grid()
 plt.show()
 
-#%%
+
 
 def esp(b,n):
     return np.sum(np.diff(b)*n*b[:-1])
@@ -152,9 +152,11 @@ def lado_der(desde, bines, numero, bins):
     return np.sum(np.diff(bins[cerca:]) * (numero[cerca:]))
 
 #%%
-   
-for i in range(0,20):
-    c14m_sim = poisson.rvs(np.sum(c14m)+100*i,size=cant)/np.array(len(c14m), float)
+R_medido = esperanza
+
+edades, probabilidad = [], []
+for i in range(0,200):
+    c14m_sim = poisson.rvs(np.sum(c14m)-1000+10*i,size=cant)/np.array(len(c14m), float)
     Rm = c14m_sim/uniform.rvs(loc=c12im_p, scale=c12fm_p-c12im_p, size=cant)
     Rtot = (Rm-Rf)/(Rstd-Rf)
     mask = (Rtot != np.float('+inf'))
@@ -167,6 +169,19 @@ for i in range(0,20):
     numero, bins = np.histogram(edad, bins = bines)
     numero = numero / (np.diff(bins) * np.sum(numero))
     esperanza = esp(bines, numero)
-    lado01 = lado_der(int(np.mean(edad)), bines, numero, bins)
-    print(int(np.mean(edad)), int(esperanza), round(lado01,2))
-    #ALGO ANDA MAL
+    lado01 = lado_der(R_medido, bines, numero, bins)
+    edades.append(int(np.mean(edad)))
+    probabilidad.append(lado01)
+    print(i, int(np.mean(edad)), int(esperanza), round(lado01,2))
+#%%
+    
+#Esto a veces flashea, conviene mirar la lista
+def find_index_of_nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx
+
+indice_16 = find_index_of_nearest(probabilidad, 0.16)
+indice_84 = find_index_of_nearest(probabilidad, 0.84)
+print('edad_16', edades[indice_16])
+print('edad_84', edades[indice_84])
