@@ -135,3 +135,38 @@ plt.ylabel('P(Edad)', fontsize=12)
 #plt.title('Histograma')
 plt.grid()
 plt.show()
+
+#%%
+
+def esp(b,n):
+    return np.sum(np.diff(b)*n*b[:-1])
+
+esperanza = esp(bines, numero)
+
+def lado_izq(hasta, bines, numero, bins):
+    cerca = np.argmax([x for x in bines if x < hasta])
+    return np.sum(np.diff(bins[:cerca]) * (numero[:cerca-1]))
+
+def lado_der(desde, bines, numero, bins):
+    cerca = np.argmax([x for x in bines if x >= desde])
+    return np.sum(np.diff(bins[cerca:]) * (numero[cerca:]))
+
+#%%
+   
+for i in range(0,20):
+    c14m_sim = poisson.rvs(np.sum(c14m)+100*i,size=cant)/np.array(len(c14m), float)
+    Rm = c14m_sim/uniform.rvs(loc=c12im_p, scale=c12fm_p-c12im_p, size=cant)
+    Rtot = (Rm-Rf)/(Rstd-Rf)
+    mask = (Rtot != np.float('+inf'))
+    Rtot = Rtot[mask]
+    mask = (Rtot>=0.00)
+    Rtot = Rtot[mask]
+    edad = -tau*np.log(Rtot)
+    Emin, Emax = np.min(edad), np.max(edad)
+    bines = np.linspace(Emin, Emax,100)
+    numero, bins = np.histogram(edad, bins = bines)
+    numero = numero / (np.diff(bins) * np.sum(numero))
+    esperanza = esp(bines, numero)
+    lado01 = lado_der(int(np.mean(edad)), bines, numero, bins)
+    print(int(np.mean(edad)), int(esperanza), round(lado01,2))
+    #ALGO ANDA MAL
