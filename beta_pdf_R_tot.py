@@ -77,7 +77,7 @@ print("--- %s cuentas de 12C durante la medición del estandar" % c12std)
 #%%
 
 #Cantidad de valores que voy a generar en cada Montecarlo
-cant = int(1e4)
+cant = int(1e7)
 
 start_time = time.time()
 
@@ -178,7 +178,7 @@ error = np.sqrt(numero) / (np.diff(bins)* np.sum(numero)) #error poissoniano
 numero = numero / (np.diff(bins) * np.sum(numero)) #Normalizo a 1 (divido por el área ocupada por el histograma)
 
 # Ajusto el histograma con una pdf beta
-ajuste_t = beta.fit(edad)
+#ajuste_t = beta.fit(edad)
 
 
 
@@ -187,6 +187,33 @@ ajuste_t = beta.fit(edad)
 # Tomo el intervalo basandome en que edad tiene distribucion beta
 
 intervalo_edad_hist = beta.interval(0.68, ajuste_t[0], ajuste_t[1], loc=ajuste_t[2], scale=ajuste_t[3])
+
+#%%
+# Tomo el intervalo numéricamente
+
+intervalo_edad_num = np.array([np.percentile(edad, 16), np.percentile(edad, 84)], dtype=int)
+# Grafico el histograma con las barras de los percentiles
+bines = np.linspace(Emin, Emax, 1000)
+numero, bins = np.histogram(edad, bins = bines) #numero=numero de entradas por bin
+numero = numero / (np.diff(bins) * np.sum(numero)) #Normalizo a 1 (divido por el área ocupada por el histograma)
+
+fig = plt.figure(figsize=(10,6))
+plt.bar(bins[:-1], numero, width = np.diff(bins), ecolor="b", color='c', alpha=0.7)
+plt.xlim([Emin, Emax])
+plt.tick_params(labelsize=16)
+plt.xlabel('Edad (años)', fontsize=18)
+plt.ylabel('Densidad de eventos (adim.)', fontsize=18)
+altura_lineas = [numero[np.where(bins >= intervalo_edad_num[i])[0][0] - 1] for i in [0,1]]
+plt.vlines(intervalo_edad_num[0], ymin=0, ymax=altura_lineas[0], color='r')
+plt.vlines(intervalo_edad_num[1], ymin=0, ymax=altura_lineas[1], color='r')
+
+from matplotlib.ticker import FormatStrFormatter
+ax = plt.gca()
+ax.yaxis.set_major_formatter(FormatStrFormatter('%.0e'))
+
+#plt.title('Histograma')
+plt.grid()
+plt.show()
 
 #%%
 # Grafico el histograma con el ajuste superpuesto

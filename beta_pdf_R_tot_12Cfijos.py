@@ -77,7 +77,7 @@ print("--- %s cuentas de 12C durante la medición del estandar" % c12std)
 #%%
 
 #Cantidad de valores que voy a generar en cada Montecarlo
-cant = int(1e4)
+cant = int(1e7)
 
 start_time = time.time()
 
@@ -129,14 +129,14 @@ error = np.sqrt(numero) / (np.diff(bins)* np.sum(numero)) #error poissoniano
 numero = numero / (np.diff(bins) * np.sum(numero)) #Normalizo a 1 (divido por el área ocupada por el histograma)
 
 # Ajusto el histograma con una pdf beta
-ajuste = beta.fit(Rtot)
+#ajuste = beta.fit(Rtot)
 
 #%%
 # Grafico el histograma con el ajuste superpuesto
 fig = plt.figure(figsize=(10,6))
 plt.bar(bins[:-1], numero, width = np.diff(bins), yerr = error, ecolor="b", color='c', alpha=0.7)
-plt.plot(puntos_a, beta.pdf(puntos_a, ajuste[0], ajuste[1], loc=ajuste[2], scale=ajuste[3]), 'm-')
-plt.legend(loc=1, borderaxespad=0.)
+#plt.plot(puntos_a, beta.pdf(puntos_a, ajuste[0], ajuste[1], loc=ajuste[2], scale=ajuste[3]), 'm-')
+#plt.legend(loc=1, borderaxespad=0.)
 plt.xlim([Rmin, Rmax])
 plt.xlabel('R')
 plt.title('Histograma')
@@ -172,13 +172,13 @@ edad = -tau*np.log(Rtot)
 Emin, Emax = np.min(edad), np.max(edad)
 
 puntos_b = np.linspace(Emin, Emax,300) #puntos para graficar f(x)
-bines = np.linspace(Emin, Emax,100)
+bines = np.linspace(Emin, Emax, 100)
 numero, bins = np.histogram(edad, bins = bines) #numero=numero de entradas por bin
 error = np.sqrt(numero) / (np.diff(bins)* np.sum(numero)) #error poissoniano
 numero = numero / (np.diff(bins) * np.sum(numero)) #Normalizo a 1 (divido por el área ocupada por el histograma)
 
 # Ajusto el histograma con una pdf beta
-ajuste_t = beta.fit(edad)
+#ajuste_t = beta.fit(edad)
 
 
 
@@ -187,6 +187,34 @@ ajuste_t = beta.fit(edad)
 # Tomo el intervalo basandome en que edad tiene distribucion beta
 
 intervalo_edad_hist = beta.interval(0.68, ajuste_t[0], ajuste_t[1], loc=ajuste_t[2], scale=ajuste_t[3])
+#%%
+# Tomo el intervalo numéricamente
+
+intervalo_edad_num = np.array([np.percentile(edad, 16), np.percentile(edad, 84)], dtype=int)
+# Grafico el histograma con las barras de los percentiles
+bines = np.linspace(Emin, Emax, 1000)
+numero, bins = np.histogram(edad, bins = bines) #numero=numero de entradas por bin
+numero = numero / (np.diff(bins) * np.sum(numero)) #Normalizo a 1 (divido por el área ocupada por el histograma)
+
+fig = plt.figure(figsize=(10,6))
+plt.bar(bins[:-1], numero, width = np.diff(bins), ecolor="b", color='c', alpha=0.7)
+plt.xlim([Emin, Emax])
+plt.tick_params(labelsize=16)
+plt.xlabel('Edad (años)', fontsize=18)
+plt.ylabel('Densidad de eventos (adim.)', fontsize=18)
+altura_lineas = [numero[np.where(bins >= intervalo_edad_num[i])[0][0] - 1] for i in [0,1]]
+plt.vlines(intervalo_edad_num[0], ymin=0, ymax=altura_lineas[0], color='r')
+plt.vlines(intervalo_edad_num[1], ymin=0, ymax=altura_lineas[1], color='r')
+
+
+from matplotlib.ticker import FormatStrFormatter
+ax = plt.gca()
+ax.yaxis.set_major_formatter(FormatStrFormatter('%.0e'))
+
+#plt.title('Histograma')
+plt.grid()
+plt.show()
+
 
 #%%
 # Grafico el histograma con el ajuste superpuesto
@@ -209,12 +237,19 @@ plt.show()
 
 # Comparo ambos metodos
 print('Intervalos para la edad calculados a partir de la distribucion de')
+
 print('R = ', np.array(intervalo_edad_r,dtype=int))
 vmedio = (intervalo_edad_r[0] + intervalo_edad_r[1]) / 2
 error = np.abs(intervalo_edad_r[0] - intervalo_edad_r[1]) / 2
 print('Error relativo {}%.'.format(error / vmedio))
+
 print('la edad = ', np.array(intervalo_edad_hist,dtype=int))
 vmedio = (intervalo_edad_hist[0] + intervalo_edad_hist[1]) / 2
 error = np.abs(intervalo_edad_hist[0] - intervalo_edad_hist[1]) / 2
+print('Error relativo {}%.'.format(error / vmedio))
+
+print('percentiles = ', intervalo_edad_num)
+vmedio = (intervalo_edad_num[0] + intervalo_edad_num[1]) / 2
+error = np.abs(intervalo_edad_num[0] - intervalo_edad_num[1]) / 2
 print('Error relativo {}%.'.format(error / vmedio))
 # Ahora ya no da enorme! El intervalo es aproximadamente [8150 años, 8810 años]
