@@ -75,15 +75,15 @@ for mu_muestra in range(1, int(valor_actual)):
     edadmax_sim.append(t_max_sim)
     edadmin_sim.append(t_min_sim)
 
+#%%
 
-
-fig = plt.figure(figsize=(20,10))
-plt.plot(edad_gauss, edadmax_gauss, 'm.-')
-plt.plot(edad_gauss, edadmin_gauss, 'm.-', label='Intervalo aprox gaussiana')
+fig = plt.figure()
+plt.plot(edad_gauss, edadmax_gauss, 'm-')
+plt.plot(edad_gauss, edadmin_gauss, 'm-', label='Intervalo')
 plt.plot(edad_gauss, edad_gauss, 'k-', label='Edad')
-plt.plot(edad_sim, edad_sim, 'k-')
-plt.plot(edad_sim, edadmax_sim, 'g.-')
-plt.plot(edad_sim, edadmin_sim, 'g.-', label='Intervalo simulacion')
+#plt.plot(edad_sim, edad_sim, 'k-')
+#plt.plot(edad_sim, edadmax_sim, 'g-')
+#plt.plot(edad_sim, edadmin_sim, 'g-', label='Intervalo')
 plt.grid()
 plt.xlabel('Edad')
 plt.ylabel('Intervalo 68% CL')
@@ -92,14 +92,19 @@ plt.xlim(xmin=0)
 plt.ylim(ymin=0)
 plt.show()
 
+#plt.savefig('F:/Facultad/Estadística/ciclofor.png', dpi=None, facecolor='w', edgecolor='w',         orientation='portrait', papertype=None, format=None, transparent=False, bbox_inches='tight', pad_inches=0.1, frameon=None)
+
+#%%
 delta_gauss = (np.array(edadmax_gauss)-np.array(edadmin_gauss))/2.
 delta_sim = (np.array(edadmax_sim)-np.array(edadmin_sim))/2.
 
-fig = plt.figure(figsize=(20,10))
-plt.plot(edad_gauss, delta_gauss, 'm.-')
-plt.plot(edad_sim, delta_sim, 'g.-')
+fig = plt.figure()
+plt.plot(edad_gauss, delta_gauss, 'm-')
+#plt.plot(edad_sim, delta_sim, 'g-')
 plt.xlim(xmin=0)
 plt.grid()
 plt.xlabel('Edad')
-plt.ylabel('Delta')
+plt.ylabel('$\Delta$Edad')
 plt.show()
+
+#plt.savefig('F:/Facultad/Estadística/ciclofor_delta.png', dpi=None, facecolor='w', edgecolor='w',         orientation='portrait', papertype=None, format=None, transparent=False, bbox_inches='tight', pad_inches=0.1, frameon=None)
