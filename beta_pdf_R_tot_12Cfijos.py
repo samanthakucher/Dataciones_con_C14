@@ -247,9 +247,9 @@ print('la edad = ', np.array(intervalo_edad_hist,dtype=int))
 vmedio = (intervalo_edad_hist[0] + intervalo_edad_hist[1]) / 2
 error = np.abs(intervalo_edad_hist[0] - intervalo_edad_hist[1]) / 2
 print('Error relativo {}%.'.format(error / vmedio))
+# Ahora ya no da enorme! El intervalo es aproximadamente [8150 años, 8810 años]
 
 print('percentiles = ', intervalo_edad_num)
 vmedio = (intervalo_edad_num[0] + intervalo_edad_num[1]) / 2
 error = np.abs(intervalo_edad_num[0] - intervalo_edad_num[1]) / 2
 print('Error relativo {}%.'.format(error / vmedio))
-# Ahora ya no da enorme! El intervalo es aproximadamente [8150 años, 8810 años]
