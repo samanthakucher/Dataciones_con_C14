@@ -77,7 +77,7 @@ print("--- %s cuentas de 12C durante la medición del estandar" % c12std)
 #%%
 
 #Cantidad de valores que voy a generar en cada Montecarlo
-cant = int(1e4)
+cant = int(1e5)
 
 start_time = time.time()
 
@@ -100,9 +100,6 @@ Rf = c14f_sim/uniform.rvs(loc=c12if_p, scale=c12ff_p-c12if_p, size=cant)
 Rstd = c14std_sim/uniform.rvs(loc=c12fstd_p, scale=c12istd_p-c12fstd_p, size=cant)
 
 Rtot = (Rm-Rf)/(Rstd-Rf)
-# Lo correcto sería restar conteos con fondos primero y luego dividir.
-# Para hacerlo hay que tener tener conteos y fondos por unidad de tiempo y de corriente. Por?
-# De todos modos sugiero dejarlo así y discutirlo después. Ok
 
 #Elimino los infinitos
 mask = (Rtot != np.float('+inf'))
@@ -117,6 +114,40 @@ np.all(Rtot != np.float('+inf'))
 np.all(Rtot <= 0.00)
 
 print("--- %s seconds ---" % (time.time() - start_time))
+
+#%%
+# Prueba: qué pasa si las uniformes las estimamos distinto y corremos la simu
+# con esas otras distribuciones?
+
+# Correr este bloque alternativamente al anterior 
+
+c12m = (Iim+Ifm)/2 * (dtm/q)
+c12s = (Iistd+Ifstd)/2 * (dtstd/q)
+c12f = (Iif+Iff)/2 * (dtf/q)
+
+cant = int(1e7)
+
+start_time = time.time()
+
+c14m_sim = poisson.rvs(np.sum(c14m),size=cant)/np.array(len(c14m), float)
+c14f_sim = poisson.rvs(np.sum(c14f),size=cant)/np.array(len(c14f), float)
+c14std_sim = poisson.rvs(np.sum(c14std),size=cant)/np.array(len(c14std), float)
+
+Rm = c14m_sim/uniform.rvs(loc=min(c12m), scale=max(c12m)-min(c12m), size=cant)
+Rf = c14f_sim/uniform.rvs(loc=min(c12f), scale=max(c12f)-min(c12f), size=cant)
+Rstd = c14std_sim/uniform.rvs(loc=min(c12s), scale=max(c12s)-min(c12s), size=cant)
+
+Rtot = (Rm-Rf)/(Rstd-Rf)
+
+#Elimino los infinitos
+mask = (Rtot != np.float('+inf'))
+Rtot = Rtot[mask]
+# Elimino los posibles casos en que esta variable tome valores negativos
+mask = (Rtot>=0.00)
+Rtot = Rtot[mask]
+print("--- %s seconds ---" % (time.time() - start_time))
+
+
 #%%
 
 # Construyo el histograma de la variable Rtot
@@ -178,7 +209,7 @@ error = np.sqrt(numero) / (np.diff(bins)* np.sum(numero)) #error poissoniano
 numero = numero / (np.diff(bins) * np.sum(numero)) #Normalizo a 1 (divido por el área ocupada por el histograma)
 
 # Ajusto el histograma con una pdf beta
-ajuste_t = beta.fit(edad)
+#ajuste_t = beta.fit(edad)
 
 
 
@@ -187,6 +218,38 @@ ajuste_t = beta.fit(edad)
 # Tomo el intervalo basandome en que edad tiene distribucion beta
 
 intervalo_edad_hist = beta.interval(0.68, ajuste_t[0], ajuste_t[1], loc=ajuste_t[2], scale=ajuste_t[3])
+
+#%%
+# Tomo el intervalo numéricamente
+
+intervalo_edad_num = np.array([np.percentile(edad, 16), np.percentile(edad, 84)], dtype=int)
+# Grafico el histograma con las barras de los percentiles
+bines = np.linspace(Emin, Emax, 1000)
+numero, bins = np.histogram(edad, bins = bines) #numero=numero de entradas por bin
+numero = numero / (np.diff(bins) * np.sum(numero)) #Normalizo a 1 (divido por el área ocupada por el histograma)
+
+fig = plt.figure(figsize=(10,6))
+plt.bar(bins[:-1], numero, width = np.diff(bins), ecolor="b", color='c', alpha=0.7)
+plt.xlim([Emin, Emax])
+plt.tick_params(labelsize=16)
+plt.xlabel('Edad (años)', fontsize=18)
+plt.ylabel('Densidad de eventos (adim.)', fontsize=18)
+altura_lineas = [numero[np.where(bins >= intervalo_edad_num[i])[0][0] - 1] for i in [0,1]]
+plt.vlines(intervalo_edad_num[0], ymin=0, ymax=altura_lineas[0], color='r')
+plt.vlines(intervalo_edad_num[1], ymin=0, ymax=altura_lineas[1], color='r')
+
+from matplotlib.ticker import FormatStrFormatter
+ax = plt.gca()
+ax.yaxis.set_major_formatter(FormatStrFormatter('%.0e'))
+
+#plt.title('Histograma')
+plt.grid()
+plt.show()
+
+print('Edad por percentiles numéricos = ', intervalo_edad_num)
+vmedio = (intervalo_edad_num[0] + intervalo_edad_num[1]) / 2
+error = np.abs(intervalo_edad_num[0] - intervalo_edad_num[1]) / 2
+print('Error relativo {}%.'.format(error / vmedio))
 
 #%%
 # Grafico el histograma con el ajuste superpuesto
